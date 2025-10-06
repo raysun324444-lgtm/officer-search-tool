@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Officer in Charge Lookup Tool</title>
+    <!-- Load Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom font from Google Fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen flex items-center justify-center">
+
+    <div class="w-full max-w-2xl bg-white shadow-xl rounded-xl p-6 md:p-10 border border-gray-100">
+
+        <!-- Header -->
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Location Officer Search</h1>
+        <p class="text-gray-500 mb-6">Type a city or province to quickly find the officer in charge.</p>
+
+        <!-- Search Input -->
+        <div class="mb-8">
+            <label for="search-input" class="block text-sm font-medium text-gray-700 mb-2">Search Location:</label>
+            <input 
+                type="text" 
+                id="search-input" 
+                placeholder="E.g., 'Phnom Penh' or 'Kandal Province'"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 shadow-sm"
+                oninput="searchLocations()"
+            >
+        </div>
+
+        <!-- Results Area -->
+        <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">Results</h2>
+        <div id="results-container" class="space-y-4">
+            <!-- Results will be dynamically inserted here -->
+            <p id="initial-message" class="text-gray-400 italic">Start typing above to see matching officers.</p>
+        </div>
+
+    </div>
+
+    <script>
+        // === 1. YOUR DATA HERE ===
+        // IMPORTANT: This array contains all the locations and officers. 
+        // This is the section you must edit to update or change data.
+        const locationData = [
+            // Ensure every object has both a 'location' and 'officer' key.
+            { location: "Khan Doun Penh", officer: "1" }, 
+            { location: "Khan Chamkar Mon", officer: "1" },
+            { location: "Khan Mean Chey", officer: "1" },
+            { location: "Khan Chbar Ampov", officer: "1" },
+            { location: "Kandal Province", officer: "1" },
+            { location: "Takeo Province", officer: "1" },
+            { location: "Kampot Province", officer: "1" },
+            { location: "Kep Province", officer: "1" },
+            { location: "Koh Kong Province", officer: "1" },
+            { location: "Oddar Meanchey", officer: "1" },
+            { location: "Kep City, Coastal Region", officer: "Mr. Sun Rithy" },
+            { location: "Preah Sihanouk Province, Coastal Region", officer: "Ms. Sokun Thea" },
+            { location: "Banteay Meanchey Province, Northwest Zone", officer: "Mr. Ly Huot" },
+            { location: "Pailin Province, West Region", officer: "Ms. Kimsou Khem" },
+            { location: "Khan kamboul, Sangkat Kamboul, Sangkat Ovlaok, Sangkat Snaor", officer: "2" },
+            { location: "Khan Pur SenChey, Sangkat Trapeang Krasang, Sangkat Samraong Kraom, Sangkat Sangkat Kakab 1, Sangkat Sangkat Kakab 2", officer: "2" },
+            { location: "Khan Chrouy Changvar", officer: "2" },
+            { location: "Khan Boeng Keng Kang", officer: "2" },
+            { location: "Ratanak Kiri Province", officer: "2" },
+            { location: "Battambang Province", officer: "2" },
+            { location: "Siem Reap Province", officer: "2" },
+            { location: "Pailin Province", officer: "2" },
+            { location: "Preah Vihear Province", officer: "2" },
+            { location: "Kampong Chhnang Province", officer: "2" },
+            { location: "Khan Tuol Kouk", officer: "3" },
+            { location: "Khan Russey Keo", officer: "3" },
+            { location: "Khan Dangkao", officer: "3" },
+            { location: "Khan Saensokh", officer: "3" },
+            { location: "Svay Rieng Province", officer: "3" },
+            { location: "Kampong Cham Province", officer: "3" },
+            { location: "Prey Veng Province", officer: "3" },
+            { location: "Preah Sihanouk Province", officer: "3" },
+            { location: "Steung Treng Province", officer: "3" },
+            { location: "Tboung Khmum Province", officer: "3" },
+            { location: "Khan kamboul, Sangkat Prateah Lang, Sangkat Boeng Thum, Sangkat Phleung Chheh Roteh, Sangkat Kantaok", officer: "4" },
+            { location: "Khan Pur SenChey, Sangkat Chaom Chau 1, Sangkat Chaom Chau 2, Sangkat Chaom Chau 3", officer: "4" },
+            { location: "Khan Praek Pnov", officer: "4" },
+            { location: "Khan Prampir Meakkakra", officer: "4" },
+            { location: "Banteay Meanchey Province", officer: "4" },
+            { location: "Kampong Speu Province", officer: "4" },
+            { location: "Mondul Kiri Province", officer: "4" },
+            { location: "Pursat Province", officer: "4" },
+            { location: "Kratie Province", officer: "4" },
+            { location: "Kampong Thom Province", officer: "4" },
+        ];
+
+        // Get elements
+        const searchInput = document.getElementById('search-input');
+        const resultsContainer = document.getElementById('results-container');
+        const initialMessage = document.getElementById('initial-message');
+
+        /**
+         * Filters the location data based on the search input and updates the results display.
+         */
+        function searchLocations() {
+            const query = searchInput.value.trim().toLowerCase();
+            resultsContainer.innerHTML = ''; // Clear previous results
+            initialMessage.classList.add('hidden'); // Hide initial message
+
+            if (query.length === 0) {
+                initialMessage.classList.remove('hidden');
+                return;
+            }
+
+            // Filter logic: Check if the query is included in either the location or the officer name.
+            const filteredResults = locationData.filter(item => {
+                // Safely convert to lowercase, handling potential missing data gracefully
+                const locationText = item.location ? item.location.toLowerCase() : '';
+                const officerText = item.officer ? item.officer.toLowerCase() : '';
+
+                return locationText.includes(query) || officerText.includes(query);
+            });
+
+
+            if (filteredResults.length === 0) {
+                resultsContainer.innerHTML = `
+                    <p class="text-red-500 text-center py-4 border-2 border-red-100 bg-red-50 rounded-lg">
+                        No officer found for location matching "${searchInput.value}".
+                    </p>
+                `;
+                return;
+            }
+
+            // Display results
+            filteredResults.forEach(item => {
+                const resultCard = document.createElement('div');
+                resultCard.className = 'flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border border-blue-100 bg-blue-50 rounded-lg hover:shadow-md transition duration-200';
+                
+                // Location Display
+                const locationHtml = `
+                    <div class="mb-1 sm:mb-0">
+                        <p class="text-sm font-medium text-blue-600 uppercase">Location</p>
+                        <p class="text-lg font-semibold text-gray-800">${item.location}</p>
+                    </div>
+                `;
+
+                // Officer Display
+                const officerHtml = `
+                    <div class="text-left sm:text-right mt-2 sm:mt-0">
+                        <p class="text-sm font-medium text-gray-500 uppercase">Officer in Charge</p>
+                        <p class="text-xl font-bold text-green-600">${item.officer}</p>
+                    </div>
+                `;
+
+                resultCard.innerHTML = locationHtml + officerHtml;
+                resultsContainer.appendChild(resultCard);
+            });
+        }
+        
+        // Ensure search is run if page loads with input
+        window.onload = () => {
+             if (searchInput.value.trim().length > 0) {
+                 searchLocations();
+             }
+        };
+
+    </script>
+</body>
+</html>
